@@ -60,16 +60,14 @@ class HooksTest extends MediaWikiIntegrationTestCase {
 				'/..\index.php?title=CSS/Path traversal/styles.css&action=raw&ctype=text/css',
 			],
 			[
-				'<!-- Begin Extension:CSS --><link rel="stylesheet" ' .
-				// '/* css-sanitizer failed to parse CSS */'
-				'href="data:text/css;charset=UTF-8;base64,LyogY3NzLXNhbml0aXplciBmYWlsZWQgdG8gcGFyc2UgQ1NTICov">' .
+				'<!-- Begin Extension:CSS --><style type="text/css">' .
+				'/* css-sanitizer failed to parse CSS */</style>' .
 				'<!-- End Extension:CSS -->',
 				'{',
 			],
 			[
-				'<!-- Begin Extension:CSS --><link rel="stylesheet" ' .
-				// '/* css-sanitizer failed to sanitize CSS */'
-				'href="data:text/css;charset=UTF-8;base64,LyogY3NzLXNhbml0aXplciBmYWlsZWQgdG8gc2FuaXRpemUgQ1NTICov">' .
+				'<!-- Begin Extension:CSS --><style type="text/css">' .
+				'/* css-sanitizer failed to sanitize CSS */</style>' .
 				'<!-- End Extension:CSS -->',
 				<<<EOT
 				  body {{
@@ -80,10 +78,8 @@ class HooksTest extends MediaWikiIntegrationTestCase {
 				EOT,
 			],
 			[
-				'<!-- Begin Extension:CSS --><link rel="stylesheet" ' .
-				'href="data:text/css;charset=UTF-8;base64,' .
-				// 'body{background:yellow;font-size:20pt;color:red}'
-				'Ym9keXtiYWNrZ3JvdW5kOnllbGxvdztmb250LXNpemU6MjBwdDtjb2xvcjpyZWR9">' .
+				'<!-- Begin Extension:CSS --><style type="text/css">' .
+				'body{background:yellow;font-size:20pt;color:red}</style>' .
 				'<!-- End Extension:CSS -->',
 				<<<EOT
 				  body {

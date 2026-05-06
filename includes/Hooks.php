@@ -175,11 +175,12 @@ class Hooks implements ParserFirstCallInitHook, RawPageViewBeforeOutputHook {
 			# sanitized user CSS
 			$css = $this->sanitizeCSS( $css );
 
-			# Encode data URI and append link tag
-			$dataPrefix = 'data:text/css;charset=UTF-8;base64,';
-			$url = $dataPrefix . base64_encode( $css );
-
-			$headItem .= Html::linkedStyle( $url );
+			# Emit an inline <style> tag instead of a data: URI <link>.
+			# The data: URI form is unreliable across browsers and breaks
+			# strict CSPs; an inline <style> is what wiki templates that
+			# interpolate page variables (e.g. Template:Header's per-page
+			# site-notice hide rule) actually need.
+			$headItem .= Html::inlineStyle( $css, 'all', [ 'type' => 'text/css' ] );
 		}
 
 		$headItem .= '<!-- End Extension:CSS -->';
