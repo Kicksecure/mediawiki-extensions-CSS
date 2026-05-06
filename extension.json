@@ -41,6 +41,7 @@
 	},
 	"config": {
 		"CSSPath": null,
+		"CSSNotSanitizedNamespaceIDs": null,
 		"CSSIdentifier": "css-extension"
 	},
 	"manifest_version": 1

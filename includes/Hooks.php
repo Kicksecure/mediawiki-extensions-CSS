@@ -132,12 +132,23 @@ class Hooks implements ParserFirstCallInitHook, RawPageViewBeforeOutputHook {
 
 		if ( $title && $title->exists() ) {
 			# Article actually in the db
-			$params = [
-				'action' => 'raw',
-				'ctype' => 'text/css',
-			] + $rawProtection;
-			$url = $title->getLocalURL( $params );
-			$headItem .= Html::linkedStyle( $url );
+			$notSanitizedNs = $this->config->get( 'CSSNotSanitizedNamespaceIDs' );
+			if ( is_array( $notSanitizedNs )
+				&& !in_array( $title->getNamespace(), $notSanitizedNs, true )
+			) {
+				# Whitelist is configured and this page's namespace is not on it.
+				$headItem .= '<!-- Error in ' . substr( $css, 0, 30 )
+					. ( strlen( $css ) > 30 ? '...' : '' )
+					. '. Only namespaces [' . implode( ',', $notSanitizedNs ) . '] allowed.'
+					. ' You use: ' . $title->getNamespace() . ' (namespace id) -->';
+			} else {
+				$params = [
+					'action' => 'raw',
+					'ctype' => 'text/css',
+				] + $rawProtection;
+				$url = $title->getLocalURL( $params );
+				$headItem .= Html::linkedStyle( $url );
+			}
 		} elseif ( $css[0] === '/' && !( strlen( $css ) >= 2 && $css[1] === '*' ) ) {
 			# Regular file
 			$base = $this->config->get( 'CSSPath' ) ??
@@ -193,6 +204,14 @@ class Hooks implements ParserFirstCallInitHook, RawPageViewBeforeOutputHook {
 	 * @return bool|void True or no return value to continue or false to abort
 	 */
 	public function onRawPageViewBeforeOutput( $rawPage, &$text ) {
+		# When CSSNotSanitizedNamespaceIDs is configured (an array), the admin
+		# has explicitly opted into serving raw, unsanitized CSS from the
+		# whitelisted namespaces. Skip sanitization here. Which pages are
+		# allowed to be loaded as CSS is gated by cssRender(), not here.
+		if ( is_array( $this->config->get( 'CSSNotSanitizedNamespaceIDs' ) ) ) {
+			return;
+		}
+
 		$identifier = $this->config->get( 'CSSIdentifier' );
 
 		if ( $rawPage->getRequest()->getBool( $identifier ) ) {
