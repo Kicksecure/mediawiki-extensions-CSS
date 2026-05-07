@@ -131,23 +131,24 @@ class Hooks implements ParserFirstCallInitHook, RawPageViewBeforeOutputHook {
 		$headItem = '<!-- Begin Extension:CSS -->';
 
 		if ( $title && $title->exists() ) {
-			# Article actually in the db
-			$notSanitizedNs = $this->config->get( 'CSSNotSanitizedNamespaceIDs' );
-			if ( is_array( $notSanitizedNs )
-				&& !in_array( $title->getNamespace(), $notSanitizedNs, true )
-			) {
-				# Whitelist is configured and this page's namespace is not on it.
-				$headItem .= '<!-- Error in ' . substr( $css, 0, 30 )
-					. ( strlen( $css ) > 30 ? '...' : '' )
-					. '. Only namespaces [' . implode( ',', $notSanitizedNs ) . '] allowed.'
-					. ' You use: ' . $title->getNamespace() . ' (namespace id) -->';
-			} else {
+			# Article actually in the db.
+			# The whitelist is always in effect; an empty/unset list means
+			# no namespace is whitelisted and the file is not delivered.
+			$whitelist = $this->config->get( 'CssRawWhitelistedNamespaceIds' ) ?? [];
+			if ( in_array( $title->getNamespace(), $whitelist, true ) ) {
+				# Namespace whitelisted: deliver the page raw.
 				$params = [
 					'action' => 'raw',
 					'ctype' => 'text/css',
 				] + $rawProtection;
 				$url = $title->getLocalURL( $params );
 				$headItem .= Html::linkedStyle( $url );
+			} else {
+				# Namespace not whitelisted: refuse delivery.
+				$headItem .= '<!-- Extension:CSS Error in ' . substr( $css, 0, 30 )
+					. ( strlen( $css ) > 30 ? '...' : '' )
+					. '. Only namespaces [' . implode( ',', $whitelist ) . '] allowed.'
+					. ' You use: ' . $title->getNamespace() . ' (namespace id) -->';
 			}
 		} elseif ( $css[0] === '/' && !( strlen( $css ) >= 2 && $css[1] === '*' ) ) {
 			# Regular file
@@ -204,11 +205,11 @@ class Hooks implements ParserFirstCallInitHook, RawPageViewBeforeOutputHook {
 	 * @return bool|void True or no return value to continue or false to abort
 	 */
 	public function onRawPageViewBeforeOutput( $rawPage, &$text ) {
-		# When CSSNotSanitizedNamespaceIDs is configured (an array), the admin
-		# has explicitly opted into serving raw, unsanitized CSS from the
-		# whitelisted namespaces. Skip sanitization here. Which pages are
+		# When CssRawWhitelistedNamespaceIds is configured (an array), the
+		# admin has explicitly opted into serving raw, unsanitized CSS from
+		# the whitelisted namespaces. Skip sanitization here. Which pages are
 		# allowed to be loaded as CSS is gated by cssRender(), not here.
-		if ( is_array( $this->config->get( 'CSSNotSanitizedNamespaceIDs' ) ) ) {
+		if ( is_array( $this->config->get( 'CssRawWhitelistedNamespaceIds' ) ) ) {
 			return;
 		}
 
